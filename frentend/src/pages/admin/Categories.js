@@ -9,45 +9,57 @@ const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000';
 export default function Categories() {
   const [categories, setCategories] = useState([]);
   const [newCat, setNewCat] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [newImage, setNewImage] = useState('');
+  const [editId, setEditId] = useState(null);
   const { showToast } = useToast();
 
   useEffect(() => {
     fetchCategories();
-
     const socket = io(SOCKET_URL);
     socket.on('categories_updated', fetchCategories);
-
     return () => socket.disconnect();
   }, []);
 
   async function fetchCategories() {
-    setLoading(true);
-    setError('');
     try {
       const res = await api.get('/categories');
       setCategories(res.data);
     } catch (err) {
-      setError('Erreur lors du chargement des catégories');
       showToast('Erreur lors du chargement des catégories', 'error');
-    } finally {
-      setLoading(false);
     }
   }
 
-  async function handleAddCategory(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     if (!newCat.trim()) return;
+
+    const payload = { name: newCat.trim(), image: newImage.trim() || undefined };
+
     try {
-      await api.post('/categories', { name: newCat });
-      setNewCat('');
+      if (editId) {
+        await api.put(`/categories/${editId}`, payload);
+        showToast('Catégorie modifiée avec succès', 'success');
+      } else {
+        await api.post('/categories', payload);
+        showToast('Catégorie ajoutée avec succès', 'success');
+      }
+      resetForm();
       fetchCategories();
-      showToast('Catégorie ajoutée avec succès', 'success');
     } catch (err) {
-      setError('Erreur lors de l\'ajout de la catégorie');
-      showToast('Erreur lors de l\'ajout de la catégorie', 'error');
+      showToast('Erreur lors de la sauvegarde', 'error');
     }
+  }
+
+  function resetForm() {
+    setNewCat('');
+    setNewImage('');
+    setEditId(null);
+  }
+
+  function handleEdit(cat) {
+    setNewCat(cat.name);
+    setNewImage(cat.image || '');
+    setEditId(cat._id);
   }
 
   async function handleDeleteCategory(id) {
@@ -56,8 +68,7 @@ export default function Categories() {
       await api.delete(`/categories/${id}`);
       fetchCategories();
       showToast('Catégorie supprimée', 'success');
-    } catch (err) {
-      setError('Erreur lors de la suppression');
+    } catch {
       showToast('Erreur lors de la suppression', 'error');
     }
   }
@@ -66,34 +77,54 @@ export default function Categories() {
     <div>
       <AdminNav />
       <h1 className="text-2xl font-bold mb-4">Gestion des catégories</h1>
-      {error && <div className="text-red-500 mb-2">{error}</div>}
-      <form onSubmit={handleAddCategory} className="mb-4 flex gap-2">
+
+      <form onSubmit={handleSubmit} className="mb-4 space-y-2">
         <input
           type="text"
-          placeholder="Nouvelle catégorie"
+          placeholder="Nom de la catégorie"
           value={newCat}
           onChange={e => setNewCat(e.target.value)}
-          className="border rounded px-2 py-1"
+          className="border rounded px-2 py-1 w-full"
         />
-        <button className="bg-blue-600 text-white px-4 py-1 rounded" type="submit">Ajouter</button>
+        <input
+          type="text"
+          placeholder="Lien image (optionnel)"
+          value={newImage}
+          onChange={e => setNewImage(e.target.value)}
+          className="border rounded px-2 py-1 w-full"
+        />
+        <div className="flex gap-2">
+          <button type="submit" className="bg-blue-600 text-white px-4 py-1 rounded">
+            {editId ? 'Modifier' : 'Ajouter'}
+          </button>
+          {editId && (
+            <button type="button" onClick={resetForm} className="bg-gray-400 text-white px-4 py-1 rounded">
+              Annuler
+            </button>
+          )}
+        </div>
       </form>
-      {loading ? (
-        <div>Chargement...</div>
-      ) : (
-        <ul className="space-y-2">
-          {categories.map(cat => (
-            <li key={cat._id} className="flex items-center gap-2 border p-2 rounded">
-              <span className="flex-1">{cat.name}</span>
-              <button
-                className="bg-red-600 text-white px-2 py-1 rounded"
-                onClick={() => handleDeleteCategory(cat._id)}
-              >
-                Supprimer
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+
+      <ul className="space-y-2">
+        {categories.map(cat => (
+          <li key={cat._id} className="flex items-center gap-4 border p-2 rounded">
+            {cat.image && <img src={cat.image} alt="" className="w-10 h-10 object-cover rounded" />}
+            <span className="flex-1">{cat.name}</span>
+            <button
+              onClick={() => handleEdit(cat)}
+              className="bg-yellow-500 text-white px-2 py-1 rounded"
+            >
+              Éditer
+            </button>
+            <button
+              onClick={() => handleDeleteCategory(cat._id)}
+              className="bg-red-600 text-white px-2 py-1 rounded"
+            >
+              Supprimer
+            </button>
+          </li>
+        ))}
+      </ul>
     </div>
   );
-} 
+}
