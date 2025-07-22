@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import api from '../../api/api';
 import AdminNav from '../../components/AdminNav';
@@ -17,9 +18,9 @@ export default function AdminMenu() {
     category: '',
     description: '',
     image: '',
-    ingredients: '', // comma separated
-    extraIngredients: '', // format: name:price,name:price
+    ingredients: '',
   });
+  const [extras, setExtras] = useState([]);
   const [editId, setEditId] = useState(null);
   const { showToast } = useToast();
 
@@ -51,19 +52,39 @@ export default function AdminMenu() {
     try {
       const res = await api.get('/categories');
       setCategories(res.data);
-    } catch (err) {
-      // ignore
+    } catch {
+      setError('Erreur lors du chargement des catégories');
+      showToast('Erreur lors du chargement des catégories', 'error');
     }
   }
 
   function parseIngredients(str) {
     return str.split(',').map(i => i.trim()).filter(Boolean);
   }
-  function parseExtras(str) {
-    return str.split(',').map(e => {
-      const [name, price] = e.split(':');
-      return name && price ? { name: name.trim(), price: Number(price) } : null;
-    }).filter(Boolean);
+
+  function updateExtra(index, field, value) {
+    const newExtras = [...extras];
+    newExtras[index] = { ...newExtras[index], [field]: value };
+    setExtras(newExtras);
+  }
+
+  function removeExtra(index) {
+    setExtras(extras.filter((_, i) => i !== index));
+  }
+
+  function addExtra() {
+    setExtras([...extras, { name: '', price: '' }]);
+  }
+
+  function cleanExtras(arr) {
+    const seen = new Set();
+    return arr.filter(e => {
+      const key = `${e.name.trim().toLowerCase()}_${e.price}`;
+      if (!e.name.trim() || isNaN(Number(e.price))) return false;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
   }
 
   async function handleAddPlat(e) {
@@ -72,17 +93,21 @@ export default function AdminMenu() {
       showToast('Tous les champs sont obligatoires et la catégorie doit être sélectionnée.', 'error');
       return;
     }
+    const cleanedExtras = cleanExtras(extras);
     try {
       const payload = {
-        name: form.name,
+        name: form.name.trim(),
         price: Number(form.price),
         category: form.category,
-        description: form.description,
-        image: form.image,
+        description: form.description.trim(),
+        image: form.image.trim(),
         ingredients: parseIngredients(form.ingredients),
-        extraIngredients: parseExtras(form.extraIngredients)
+        extraIngredients: cleanedExtras.map(e => ({
+          name: e.name.trim(),
+          price: Number(e.price),
+        })),
       };
-      console.log('Payload envoyé:', payload); // Pour debug
+
       if (editId) {
         await api.put(`/plats/${editId}`, payload);
         showToast('Plat modifié avec succès', 'success');
@@ -90,10 +115,12 @@ export default function AdminMenu() {
         await api.post('/plats', payload);
         showToast('Plat ajouté avec succès', 'success');
       }
-      setForm({ name: '', price: '', category: '', description: '', image: '', ingredients: '', extraIngredients: '' });
+
+      setForm({ name: '', price: '', category: '', description: '', image: '', ingredients: '' });
+      setExtras([]);
       setEditId(null);
       fetchMenu();
-    } catch (err) {
+    } catch {
       setError('Erreur lors de l\'ajout/modification du plat');
       showToast('Erreur lors de l\'ajout/modification du plat', 'error');
     }
@@ -108,8 +135,8 @@ export default function AdminMenu() {
       description: plat.description || '',
       image: plat.image || '',
       ingredients: plat.ingredients ? plat.ingredients.join(', ') : '',
-      extraIngredients: plat.extraIngredients ? plat.extraIngredients.map(e => `${e.name}:${e.price}`).join(', ') : ''
     });
+    setExtras(plat.extraIngredients || []);
   }
 
   async function handleDeletePlat(id) {
@@ -118,7 +145,7 @@ export default function AdminMenu() {
       await api.delete(`/plats/${id}`);
       fetchMenu();
       showToast('Plat supprimé', 'success');
-    } catch (err) {
+    } catch {
       setError('Erreur lors de la suppression');
       showToast('Erreur lors de la suppression', 'error');
     }
@@ -173,7 +200,12 @@ export default function AdminMenu() {
         {form.image && (
           <div className="md:col-span-2 flex items-center gap-2">
             <span className="text-sm text-gray-500">Aperçu&nbsp;:</span>
-            <img src={form.image} alt="aperçu" className="h-16 max-w-xs object-contain border" onError={e => e.target.style.display='none'} />
+            <img
+              src={form.image}
+              alt="aperçu"
+              className="h-16 max-w-xs object-contain border"
+              onError={e => (e.target.style.display = 'none')}
+            />
           </div>
         )}
         <input
@@ -183,24 +215,66 @@ export default function AdminMenu() {
           onChange={e => setForm(f => ({ ...f, ingredients: e.target.value }))}
           className="border rounded px-2 py-1"
         />
-        <input
-          type="text"
-          placeholder="Extras (nom:prix,nom:prix)"
-          value={form.extraIngredients}
-          onChange={e => setForm(f => ({ ...f, extraIngredients: e.target.value }))}
-          className="border rounded px-2 py-1 md:col-span-2"
-        />
-        <button className="bg-blue-600 text-white px-4 py-1 rounded md:col-span-2" type="submit">
+
+        {/* Extras inputs */}
+        <div className="md:col-span-2">
+          <label className="font-semibold mb-1 block">Extras</label>
+          {extras.map((extra, i) => (
+            <div key={i} className="flex gap-2 mb-2 items-center">
+              <input
+                type="text"
+                placeholder="Nom"
+                value={extra.name}
+                onChange={e => updateExtra(i, 'name', e.target.value)}
+                className="border rounded px-2 py-1 flex-1"
+              />
+              <input
+                type="number"
+                placeholder="Prix"
+                value={extra.price}
+                onChange={e => updateExtra(i, 'price', e.target.value)}
+                className="border rounded px-2 py-1 w-24"
+              />
+              <button
+                type="button"
+                onClick={() => removeExtra(i)}
+                className="bg-red-600 text-white px-2 py-1 rounded"
+              >
+                Supprimer
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={addExtra}
+            className="bg-green-600 text-white px-4 py-1 rounded"
+          >
+            + Ajouter un extra
+          </button>
+        </div>
+
+        <button
+          type="submit"
+          className="bg-blue-600 text-white px-4 py-1 rounded md:col-span-2"
+        >
           {editId ? 'Modifier' : 'Ajouter'}
         </button>
+
         {editId && (
-          <button type="button" className="bg-gray-400 text-white px-4 py-1 rounded md:col-span-2" onClick={() => { setEditId(null); setForm({ name: '', price: '', category: '', description: '', image: '', ingredients: '', extraIngredients: '' }); }}>
+          <button
+            type="button"
+            onClick={() => {
+              setEditId(null);
+              setForm({ name: '', price: '', category: '', description: '', image: '', ingredients: '' });
+              setExtras([]);
+            }}
+            className="bg-gray-400 text-white px-4 py-1 rounded md:col-span-2"
+          >
             Annuler la modification
           </button>
         )}
       </form>
       {loading ? (
-        
         <div>Chargement...</div>
       ) : (
         <table className="w-full border">
@@ -224,18 +298,25 @@ export default function AdminMenu() {
                 <td className="p-2 border">
                   {typeof plat.category === 'object'
                     ? plat.category.name
-                    : (categories.find(c => c._id === plat.category)?.name || plat.category)}
+                    : categories.find(c => c._id === plat.category)?.name || plat.category}
                 </td>
                 <td className="p-2 border">{plat.description}</td>
                 <td className="p-2 border">
                   {plat.image ? (
-                    <img src={plat.image} alt={plat.name} className="h-12 max-w-[80px] object-contain border" onError={e => e.target.style.display='none'} />
+                    <img
+                      src={plat.image}
+                      alt={plat.name}
+                      className="h-12 max-w-[80px] object-contain border"
+                      onError={e => (e.target.style.display = 'none')}
+                    />
                   ) : (
                     <span className="text-gray-400 italic">-</span>
                   )}
                 </td>
                 <td className="p-2 border">{plat.ingredients?.join(', ')}</td>
-                <td className="p-2 border">{plat.extraIngredients?.map(e => `${e.name} (${e.price} MAD)`).join(', ')}</td>
+                <td className="p-2 border">
+                  {plat.extraIngredients?.map(e => `${e.name} (${e.price} MAD)`).join(', ')}
+                </td>
                 <td className="p-2 border">
                   <button
                     className="bg-yellow-500 text-white px-2 py-1 rounded mr-2"
@@ -257,4 +338,4 @@ export default function AdminMenu() {
       )}
     </div>
   );
-} 
+}

@@ -33,7 +33,8 @@ export default function Categories() {
     e.preventDefault();
     if (!newCat.trim()) return;
 
-    const payload = { name: newCat.trim(), image: newImage.trim() || undefined };
+const payload = { name: newCat.trim(), image: newImage }; // حتى لو فارغة
+
 
     try {
       if (editId) {

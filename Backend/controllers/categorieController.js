@@ -29,11 +29,19 @@ const addCategorie = asyncHandler(async (req, res) => {
 });
 
 const updateCategorie = asyncHandler(async (req, res) => {
-  const categorie = await Categorie.findByIdAndUpdate(req.params.id, req.body, { new: true });
+  const { name, image } = req.body;
+
+  const categorie = await Categorie.findById(req.params.id);
   if (!categorie) {
     res.status(404);
     throw new Error('Catégorie non trouvée');
   }
+
+  // Mise à jour des champs
+  if (name !== undefined) categorie.name = name;
+  if (image !== undefined) categorie.image = image; // peut être une chaîne vide pour supprimer
+
+  await categorie.save();
 
   // Émettre un événement socket.io
   const io = req.app.get('io');
@@ -41,6 +49,7 @@ const updateCategorie = asyncHandler(async (req, res) => {
 
   res.json(categorie);
 });
+
 
 const deleteCategorie = asyncHandler(async (req, res) => {
   const categorie = await Categorie.findByIdAndDelete(req.params.id);
