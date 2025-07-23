@@ -118,9 +118,9 @@ export default function AdminOrders() {
                 </span>
               </div>
               <div className="flex flex-col items-end gap-1">
-                <span>Statut: <span className="font-semibold">{order.status}</span></span>
-                <span>Méthode de paiement: <span className="font-semibold">{order.paymentMethod || '-'}</span></span>
-                <span>Payé: <span className="font-semibold">{order.isPaid ? 'Oui' : 'Non'}</span></span>
+                <span>Statut: <span className="font-semibold">{order.status}</span></span><br />
+                <span>Méthode de paiement: <span className="font-semibold">{order.paymentMethod || '-'}</span></span><br/>  
+                <span>Payé: <span className="font-semibold">{order.isPaid ? 'Oui' : 'Non'}</span></span>&nbsp;&nbsp;
                 {/* Bouton confirmer paiement cash */}
                 {order.paymentMethod === 'cash' && !order.isPaid && (
                   <button
@@ -130,7 +130,7 @@ export default function AdminOrders() {
                   >
                     Confirmer paiement cash
                   </button>
-                )}
+                )}&nbsp;&nbsp;&nbsp;&nbsp;
                 {/* Bouton changer statut */}
                 {getNextStatus(order.status) && (
                   <button
@@ -140,7 +140,7 @@ export default function AdminOrders() {
                   >
                     Passer à "{getNextStatus(order.status)}"
                   </button>
-                )}
+                )}&nbsp;&nbsp;&nbsp;&nbsp;
                 {/* Bouton Annuler */}
                 {order.status !== 'cancelled' && order.status !== 'delivered' && (
                   <button
@@ -193,7 +193,7 @@ export default function AdminOrders() {
                 ))}
               </tbody>
             </table>
-            <div className="text-right font-bold">Total: {order.totalPrice} MAD</div>
+            <div className="text-right font-bold"><b >Total: {order.totalPrice} MAD</b></div><br/><br/>
           </div>
         ))}
       </div>

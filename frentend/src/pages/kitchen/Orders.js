@@ -109,7 +109,7 @@ export default function KitchenOrders() {
                 }</span>
               </div>
               <div>
-                Statut: <span className="font-semibold">{order.status}</span>
+                Statut: <span className="font-semibold">{order.status}</span> &nbsp;&nbsp;
                 {getNextStatus(order.status) && (
                   <button
                     className="ml-4 px-3 py-1 bg-blue-600 text-white rounded disabled:opacity-50"
@@ -151,6 +151,7 @@ export default function KitchenOrders() {
                 ))}
               </tbody>
             </table>
+            <br/><br/>
             {/* <div className="text-right font-bold">Total: {order.totalPrice} MAD</div> */}
           </div>
         ))}
