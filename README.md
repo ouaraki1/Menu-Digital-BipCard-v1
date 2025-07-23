@@ -40,3 +40,16 @@ npm run dev
 cd frontend
 npm start
 ```
+
+
+
+
+
+
+
+PORT=5000
+CLIENT_URL=http://localhost:3000
+MONGO_URI=mongodb://127.0.0.1:27017/restaurant_db
+JWT_SECRET=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9_ç23ufyyubhjgyutgkhoohnj@$$&^YGU&*&*BHHUY*GVGVTYF$YU&GHGVGTDRVBGHGHV
+STRIPE_SECRET_KEY=sk_test_51RdDfpIK2cyKG4vjGaqlu1WwCfPPrIJ7H55Xokb9rLG7e46Uc8aMT5Tt4Y8AvBpAB9TyHcdtezgZmKpSmQyK0vQU00qcpdHoy1
+STRIPE_WEBHOOK_SECRET=whsec_8e2c01beca02e14d3edf56d4f2f1dcfe656a3f794b4ba0a0470ad6b911dbd6a1
