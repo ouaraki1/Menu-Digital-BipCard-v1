@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useState } from 'react';
 import api from '../../api/api';
 import AdminNav from '../../components/AdminNav';

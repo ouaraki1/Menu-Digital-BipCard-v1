@@ -32,6 +32,7 @@ export default function AdminMenu() {
     socket.on('menu_updated', fetchMenu);
 
     return () => socket.disconnect();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function fetchMenu() {
