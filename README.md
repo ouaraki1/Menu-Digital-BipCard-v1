@@ -23,8 +23,7 @@ npm install
 
 1. Copier les fichiers d'exemple des variables d'environnement :
 ```bash
-cp backend/.env.example backend/.env
-cp frontend/.env.example frontend/.env
+cp backend/example.env backend/.env
 ```
 
 2. Configurer les variables d'environnement dans les fichiers .env
